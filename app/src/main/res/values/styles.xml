@@ -1,0 +1,29 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorPrimary</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="actionBarTheme">@style/ActionBar</item>
+        <item name="android:textColor">@color/foreground</item>
+        <item name="android:editTextColor">@color/foreground</item>
+        <item name="android:textColorHint">@color/foreground</item>
+        <item name="android:checkboxStyle">@style/Checkbox</item>
+    </style>
+
+    <style name="ActionBar" parent="ThemeOverlay.AppCompat.Dark.ActionBar" >
+        <item name="android:background">@color/actionBar</item>
+    </style>
+
+    <style name="Checkbox" parent="Widget.AppCompat.CompoundButton.CheckBox" >
+        <item name="android:textColor">@color/foreground</item>
+    </style>
+
+    <style name="Button" parent="Widget.AppCompat.Button" >
+        <item name="android:background">@color/button_bg</item>
+    </style>
+
+</resources>

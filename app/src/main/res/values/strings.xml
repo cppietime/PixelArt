@@ -1,0 +1,69 @@
+<resources>
+    <string name="app_name">Pixel Sprite Maker</string>
+
+    <string name="save">Save</string>
+    <string name="share">Share</string>
+    <string name="random_all">Randomize All</string>
+    <string name="refresh">Generate</string>
+
+    <string name="width_hint">Width (px)</string>
+    <string name="height_hint">Height (px)</string>
+    <string name="cross">x</string>
+
+    <string name="seed_label">Seed</string>
+    <string name="random_seed">Random</string>
+    <string name="randomize">Randomize</string>
+
+    <string name="center_density">Center density</string>
+    <string name="edge_density">Edge density</string>
+    <string name="bias">Bias</string>
+    <string name="gain">Gain</string>
+    <string name="mirror_x">Horizontal Mirror</string>
+    <string name="mirror_y">Vertical Mirror</string>
+    <string name="mirror_p">Positive Mirror</string>
+    <string name="mirror_n">Negative Mirror</string>
+
+    <string name="num_colors"># Colors</string>
+    <string name="num_seeds"># Seed Pts</string>
+
+    <string name="color_speed">Color Speed</string>
+    <string name="color_mutation">Mutation</string>
+
+    <string name="color_select">Base Color</string>
+    <string name="color_hue">Hue</string>
+    <string name="color_sat">Sat</string>
+    <string name="color_val">Val</string>
+    <string name="color_preview">Color Preview</string>
+
+    <string name="preview_Desc">Generated sprite</string>
+
+    <string name="info">Info</string>
+    <string name="source">Goto Source Code</string>
+
+    <string name="explanation">Pixel Sprite Maker will randomly generate pixel art sprites that you can customize!\n
+The "Seed" input is a magic number that works as a starting point for all random operations. Changing this value gives you different random outcomes for the same parameters.\n
+Checking the "Random" seed box will choose a new seed every time a new image is generated. The "Randomize" button will also create a new random seed. If you want, you can manually input your own seed.\n
+The "Edge" and "Center" densities are the likelihoods of a pixel in the edge and center, respectively, being filled in.\n
+"Bias" and "Gain" skew these probabilities toward or away from the center and midpoints of the image.\n
+The probability of the image being mirrored on the x-axis, y-axis, and positive and negative diagonals can be adjusted.\n
+"Color speed" is the rate at which seeded random colors fill in. A higher color speed gives a more uniformly colored sprite.\n
+"Mutation" is the likelihood of  pixel being uniquely colored apart from its neighbors.\n
+Each seed point is a starting point in the image for a random color, picked from a randomly generated palette.\n
+You can use "Base color" to control a base or thematic color for the palette, or allow it to be chosen randomly.\n
+"Despeckle" is the likelihood of a pixel with no neighbors being cleared.\n
+"Despur" is the likelihood of a pixel with 1 neighbor being cleared.\n
+"Relax" is the likelihood of a pixel with 7 neighbors being filled.\n
+"Devoid" is the likelihood of a pixel with 8 neighbors being filled.\n
+"Randomize All" will randomly select nearly all parameters and generate a new image.\n
+"Generate" will only update the seed and color if they are set to random, and will create the image for the given parameters.\n
+Hit the Generate button to create an image that matches your specified parameters.\n
+Feel free to goto the source code from the menu to see the internal workings for yourself!
+    </string>
+
+    <string-array name="ca_choices">
+        <item>Despeckle</item>
+        <item>Despur</item>
+        <item>Relax</item>
+        <item>Devoid</item>
+    </string-array>
+</resources>
