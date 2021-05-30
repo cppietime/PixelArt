@@ -26,15 +26,16 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
-import com.funguscow.pixelart.data.Specs;
-import com.funguscow.pixelart.data.SpriteGrid;
+import com.funguscow.splat.Utils;
+import com.funguscow.splat.data.Specs;
+import com.funguscow.splat.data.SpriteGrid;
 import com.funguscow.pixelart.interfaces.SeekBarStopListener;
-import com.funguscow.pixelart.scale.Eagle2x;
-import com.funguscow.pixelart.scale.Eagle3x;
-import com.funguscow.pixelart.scale.ImageScaler;
-import com.funguscow.pixelart.scale.NearestNeighborI;
-import com.funguscow.pixelart.scale.Scale2x;
-import com.funguscow.pixelart.scale.Scale3x;
+import com.funguscow.splat.scale.Eagle2x;
+import com.funguscow.splat.scale.Eagle3x;
+import com.funguscow.splat.scale.ImageScaler;
+import com.funguscow.splat.scale.NearestNeighborI;
+import com.funguscow.splat.scale.Scale2x;
+import com.funguscow.splat.scale.Scale3x;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -78,12 +79,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ImageScaler.Scalers.put("Eagle2x", Eagle2x::new);
-        ImageScaler.Scalers.put("Eagle3x", Eagle3x::new);
-        ImageScaler.Scalers.put("Nearest Neighbor x2", () -> new NearestNeighborI(2));
-        ImageScaler.Scalers.put("Nearest Neighbor x3", () -> new NearestNeighborI(3));
-        ImageScaler.Scalers.put("Scale2x", Scale2x::new);
-        ImageScaler.Scalers.put("Scale3x", Scale3x::new);
+//        ImageScaler.Scalers.put("Eagle2x", Eagle2x::new);
+//        ImageScaler.Scalers.put("Eagle3x", Eagle3x::new);
+//        ImageScaler.Scalers.put("Nearest Neighbor x2", () -> new NearestNeighborI(2));
+//        ImageScaler.Scalers.put("Nearest Neighbor x3", () -> new NearestNeighborI(3));
+//        ImageScaler.Scalers.put("Scale2x", Scale2x::new);
+//        ImageScaler.Scalers.put("Scale3x", Scale3x::new);
 
         preview = findViewById(R.id.preview);
         colorView = findViewById(R.id.colorPreview);
@@ -134,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
         seedInput.setText(getString(R.string.integer, seed));
         updateSpecs(specState);
         SpriteGrid grid = new SpriteGrid(specState);
-        grid.drawTo(sprite);
+        IOHelper.pixelsToBitmap(grid.draw(), sprite);
 
         BitmapDrawable drawable = new BitmapDrawable(getResources(), sprite);
 
@@ -143,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
 
         updateColorPreview();
 
-        List<String> scalerKeys = new ArrayList<>(ImageScaler.Scalers.keySet());
+        List<String> scalerKeys = new ArrayList<>(ImageScaler.getScalers().keySet());
         Log.d("Pixelart", "Key length = " + scalerKeys.size());
         for (String key : scalerKeys) {
             Log.d("Pixelart", "Key = " + key);
@@ -272,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
 
         refreshButton.setOnClickListener((button) -> generate());
 
-        saveButton.setOnClickListener((button) -> Utils.saveBitmap(sprite,
+        saveButton.setOnClickListener((button) -> IOHelper.saveBitmap(sprite,
                 this,
                 "PixelSprites",
                 "PixelArt_" + System.currentTimeMillis(),
@@ -523,7 +524,7 @@ public class MainActivity extends AppCompatActivity {
         preGenerate();
 
         SpriteGrid grid = new SpriteGrid(specState);
-        grid.drawTo(sprite);
+        IOHelper.pixelsToBitmap(grid.draw(), sprite);
 
     }
 
@@ -571,8 +572,8 @@ public class MainActivity extends AppCompatActivity {
         String base = "PixelArtBatch_" + System.currentTimeMillis() + "_";
         int successful = 0;
         for (int i = 0; i < size; i++) {
-            grid.drawTo(sprite);
-            if (Utils.saveBitmap(sprite,
+            IOHelper.pixelsToBitmap(grid.draw(), sprite);
+            if (IOHelper.saveBitmap(sprite,
                     this,
                     "PixelSprites",
                     base + i,
