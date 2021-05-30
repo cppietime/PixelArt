@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.funguscow.pixelart.Utils;
+import com.funguscow.pixelart.scale.ImageScaler;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -17,7 +18,7 @@ public class SpriteGrid {
     private static final float H_SIGMA = 0.2f, S_SIGMA = 0.2f, V_SIGMA = 0.2f;
 
     private int[] grid;
-    private int width, height;
+    private final int width, height;
     private final Specs specs;
     private final Random random;
     private int[] palette;
@@ -25,19 +26,22 @@ public class SpriteGrid {
     private boolean mirrorX, mirrorY, mirrorP, mirrorN;
 
     /**
-     *
      * @param specs Input parameters to use in generating a sprite
      */
     public SpriteGrid(Specs specs) {
         this.specs = specs;
         width = this.specs.width;
         height = this.specs.height;
+        if (width < 0 || height < 0) {
+            throw new IllegalArgumentException("Invalid dimensions" + width + " x " + height);
+        }
         grid = new int[height * width];
         random = new Random(specs.seed);
     }
 
     /**
      * Generate the image and write them to {@code img}
+     *
      * @param img Bitmap that acts as a destination
      * @throws IllegalArgumentException When {@code img}'s dimensions do not match this'
      */
@@ -51,13 +55,28 @@ public class SpriteGrid {
         simulateCA();
         colorize();
         mirror();
-        if (img.getHeight() != height || img.getWidth() != width) {
+        if (img.getHeight() != specs.targetHeight || img.getWidth() != specs.targetWidth) {
             throw new IllegalArgumentException("Provided bitmap's dimensions do not match grid");
         }
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-//                Log.d("Pixelart", "(" + x + ", " + y + "): " + Integer.toHexString(grid[y * width + x]));
-                img.setPixel(x, y, grid[y * width + x]);
+        int[] inGrid = grid;
+        int w = width, h = height;
+        ImageScaler scaler = ImageScaler.Scalers.get(specs.scaleName).get();
+        while (w * scaler.ratio <= specs.targetWidth || h * scaler.ratio <= specs.targetHeight) {
+            Log.d("Pixelart", "Scaling " + w + ", " + h + " by " + scaler.ratio);
+            inGrid = scaler.scale(inGrid, w, h);
+            w *= scaler.ratio;
+            h *= scaler.ratio;
+        }
+        if (w != specs.targetWidth || h != specs.targetHeight) {
+            inGrid = ImageScaler.scaleNearestNeighbor(inGrid,
+                    w,
+                    h,
+                    specs.targetWidth,
+                    specs.targetHeight);
+        }
+        for (int y = 0; y < specs.targetHeight; y++) {
+            for (int x = 0; x < specs.targetWidth; x++) {
+                img.setPixel(x, y, inGrid[y * specs.targetWidth + x]);
             }
         }
     }
@@ -76,7 +95,6 @@ public class SpriteGrid {
             v = Utils.clamp(v, 0, 1);
             // No need to clamp h as it wraps around anyway
             palette[i] = Utils.HSV_to_ARGB(h, s, v);
-//            Log.d("Pixelart", "Palette color " + Integer.toHexString(palette[i]));
         }
     }
 
@@ -92,10 +110,8 @@ public class SpriteGrid {
                 float param = Utils.bias(Utils.gain(dist, specs.gain), specs.bias);
                 float cutoff = Utils.lerp(specs.minProb, specs.maxProb, param);
                 if (random.nextFloat() <= cutoff) {
-//                    Log.d("Pixelart", "Filled " + x + ", " + y);
-                    grid[y * width + x] = 1; //palette[random.nextInt(palette.length)]; // Magic number w/ 0 alpha
-                }
-                else {
+                    grid[y * width + x] = 1;
+                } else {
                     grid[y * width + x] = 0;
                 }
             }
@@ -121,7 +137,8 @@ public class SpriteGrid {
                     }
                     if (neighbors <= 1 && random.nextFloat() < specs.caProbs[neighbors]) {
                         temp[y * width + x] = 0;
-                    } else if (neighbors >= 7 && random.nextFloat() < specs.caProbs[neighbors - 7 + 2]) {
+                    } else if (neighbors >= 7 &&
+                            random.nextFloat() < specs.caProbs[neighbors - 7 + 2]) {
                         temp[y * width + x] = 1;
                     } else {
                         temp[y * width + x] = grid[y * width + x];
@@ -153,7 +170,6 @@ public class SpriteGrid {
         }
         while (!frontier.isEmpty()) {
             int index = frontier.remove();
-//            Log.d("Pixelart", "Run frontier " + Integer.toHexString(grid[index]));
             boolean finished = true;
             int y = index / width, x = index % width;
             for (int dx = -1; dx <= 1; dx++) {
@@ -215,9 +231,11 @@ public class SpriteGrid {
         }
         if (mirrorY) {
             for (int y = 0; y < height / 2; y++) {
-                for (int x = 0; x < width; x++) {
-                    grid[(height - 1 - y) * width + x] = grid[y * width + x];
-                }
+                System.arraycopy(grid,
+                        y * width,
+                        grid,
+                        (height - 1 - y) * width,
+                        width);
             }
         }
         if (specs.width == specs.height) {

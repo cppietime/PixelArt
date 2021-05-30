@@ -28,6 +28,7 @@ public class Utils {
 
     /**
      * Convert hue, saturation, value, and alpha to ARGB
+     *
      * @param h Hue in [0, 1]
      * @param s Saturation in [0, 1]
      * @param v Value in [0, 1]
@@ -83,6 +84,7 @@ public class Utils {
 
     /**
      * Convert hue, saturation, and value to ARGB
+     *
      * @param h Hue in [0, 1]
      * @param s Saturation in [0, 1]
      * @param v Value in [0, 1]
@@ -94,7 +96,8 @@ public class Utils {
 
     /**
      * Perlin bias function
-     * @param t Independent variable
+     *
+     * @param t    Independent variable
      * @param bias Bias parameter
      * @return {@code t} ^ ( log({@code bias}) / log(0.5) )
      */
@@ -104,7 +107,8 @@ public class Utils {
 
     /**
      * Perlin gain function
-     * @param t Independent variable
+     *
+     * @param t    Independent variable
      * @param gain Gain parameter
      * @return Scaled/mirrored bias function
      */
@@ -117,6 +121,7 @@ public class Utils {
 
     /**
      * Linear interpolation
+     *
      * @param a Left-value
      * @param b Right-value
      * @param z Interpolation amount
@@ -128,18 +133,50 @@ public class Utils {
 
     /**
      * Clamp {@code x} between {@code min} and {@code max}
-     * @param x Value to clamp
+     *
+     * @param x   Value to clamp
      * @param min Minimum value
      * @param max Maximum value
      * @return {@code min} if {@code x} \< {@code min}. {@code max} if {@code x} \> {@code max}.
-     *      otherwise {@code x}
+     * otherwise {@code x}
      */
     public static float clamp(float x, float min, float max) {
         return Math.min(Math.max(x, min), max);
     }
 
     /**
+     * Clamp {@code x} between {@code min} and {@code max}
+     *
+     * @param x   Value to clamp
+     * @param min Minimum value
+     * @param max Maximum value
+     * @return {@code min} if {@code x} \< {@code min}. {@code max} if {@code x} \> {@code max}.
+     * otherwise {@code x}
+     */
+    public static int clamp(int x, int min, int max) {
+        return Math.min(Math.max(x, min), max);
+    }
+
+    /**
+     * Sample a clamped pixel
+     *
+     * @param image  Image from which to sample
+     * @param width  Width in pixels of {@code image}
+     * @param height Height in pixels of {@code image}
+     * @param x      X index in pixels to sample
+     * @param y      Y index in pixels to sample
+     * @return Pixel in {@code image} at {@code y} * {@code width} + {@code x}, or the nearest
+     * border pixel if out of bounds.
+     */
+    public static int clampedPixelAt(int[] image, int width, int height, int x, int y) {
+        x = clamp(x, 0, width - 1);
+        y = clamp(y, 0, height - 1);
+        return image[y * width + x];
+    }
+
+    /**
      * Util function to generate content values for saving
+     *
      * @param mime MIME type
      * @param name Name of object
      * @return ContentValues for saving
@@ -157,21 +194,27 @@ public class Utils {
 
     /**
      * Save a Bitmap to the device's gallery
-     * @param img Bitmap to save
+     *
+     * @param img     Bitmap to save
      * @param context Context of application
-     * @param folder Name of parent folder
-     * @param name Name of image to save
-     * @param toast Whether or not to display a toast
+     * @param folder  Name of parent folder
+     * @param name    Name of image to save
+     * @param toast   Whether or not to display a toast
      * @return {@code true} iff the image was saved
      */
-    public static boolean saveBitmap(Bitmap img, Activity context, String folder, String name, boolean toast) {
+    public static boolean saveBitmap(Bitmap img,
+                                     Activity context,
+                                     String folder,
+                                     String name,
+                                     boolean toast) {
         boolean success = false;
         if (Build.VERSION.SDK_INT >= 29) {
             ContentValues values = freshValuesForMIME("image/png", name);
             values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/" + folder);
             values.put(MediaStore.Images.Media.IS_PENDING, true);
 
-            Uri uri = context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            Uri uri = context.getContentResolver()
+                    .insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
             if (uri != null) {
                 try {
                     OutputStream os = context.getContentResolver().openOutputStream(uri);
@@ -188,8 +231,12 @@ public class Utils {
                 }
             }
         } else {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            if (ContextCompat.checkSelfPermission(context,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(context,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        1);
             }
             File directory = new File(Environment.getExternalStorageDirectory(), folder);
             boolean dirExist = true;
@@ -207,7 +254,9 @@ public class Utils {
                     fos.close();
                     ContentValues values = freshValuesForMIME("image/png", name);
                     values.put(MediaStore.Images.Media.DATA, imgFile.getAbsolutePath());
-                    context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                    context.getContentResolver().insert(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            values);
                     success = true;
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -217,7 +266,9 @@ public class Utils {
         if (toast) {
             if (!success) {
                 context.runOnUiThread(() ->
-                        Toast.makeText(context, ":c Failed to save image", Toast.LENGTH_LONG).show());
+                        Toast.makeText(context,
+                                ":c Failed to save image",
+                                Toast.LENGTH_LONG).show());
             } else {
                 context.runOnUiThread(() ->
                         Toast.makeText(context, "Saved image!", Toast.LENGTH_LONG).show());

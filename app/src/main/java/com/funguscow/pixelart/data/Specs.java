@@ -7,6 +7,8 @@ public class Specs {
 
     public int width = 16, height = 16;
     public int colors = 4, seeds = 4;
+    public int targetWidth = 16, targetHeight = 16;
+    public String scaleName = "Nearest Neighbor x2";
     public long seed;
 
     public float minProb = 0f, maxProb = 1f, bias = 0.5f, gain = 0.5f;

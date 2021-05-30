@@ -492,6 +492,54 @@
                         android:entries="@array/ca_choices" />
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/textView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/scale" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <EditText
+                        android:id="@+id/widthScale"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:autofillHints="pixels"
+                        android:ems="10"
+                        android:hint="@string/width_scale_hint"
+                        android:inputType="number"
+                        android:text="16" />
+
+                    <TextView
+                        android:id="@+id/cross_label2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="20"
+                        android:gravity="center"
+                        android:text="@string/cross" />
+
+                    <EditText
+                        android:id="@+id/heightScale"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:autofillHints="pixels"
+                        android:ems="10"
+                        android:hint="@string/height_scale_hint"
+                        android:inputType="number"
+                        android:text="16" />
+                </LinearLayout>
+
+                <Spinner
+                    android:id="@+id/scaleSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
             </LinearLayout>
         </ScrollView>
     </LinearLayout>

@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -28,9 +29,17 @@ import androidx.core.content.FileProvider;
 import com.funguscow.pixelart.data.Specs;
 import com.funguscow.pixelart.data.SpriteGrid;
 import com.funguscow.pixelart.interfaces.SeekBarStopListener;
+import com.funguscow.pixelart.scale.Eagle2x;
+import com.funguscow.pixelart.scale.Eagle3x;
+import com.funguscow.pixelart.scale.ImageScaler;
+import com.funguscow.pixelart.scale.NearestNeighborI;
+import com.funguscow.pixelart.scale.Scale2x;
+import com.funguscow.pixelart.scale.Scale3x;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -45,21 +54,36 @@ public class MainActivity extends AppCompatActivity {
     private BitmapDrawable spriteDrawable;
     private Random random;
 
-    private EditText seedInput, widthInput, heightInput, colorsInput, seedsInput;
-    private SeekBar edgeInput, centerInput, biasInput, gainInput, xInput, yInput, nInput, pInput, speedInput, mutationInput;
+    private EditText seedInput, widthInput, heightInput, colorsInput, seedsInput,
+            widthScaleInput, heightScaleInput;
+    private SeekBar edgeInput, centerInput, biasInput, gainInput,
+            xInput, yInput, nInput, pInput,
+            speedInput, mutationInput;
     private SeekBar hueInput, saturationInput, valueInput;
-    private Spinner probSpinner;
+    private Spinner probSpinner, scalerSpinner;
     private SeekBar probInput;
     private CheckBox randomSeed, randomColor;
 
     private Specs specState = new Specs();
 
-    private Button randomAllButton, refreshButton, saveButton, shareButton, randomSeedButton, batchButton;
+    private Button randomAllButton,
+            refreshButton,
+            saveButton,
+            shareButton,
+            randomSeedButton,
+            batchButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        ImageScaler.Scalers.put("Eagle2x", Eagle2x::new);
+        ImageScaler.Scalers.put("Eagle3x", Eagle3x::new);
+        ImageScaler.Scalers.put("Nearest Neighbor x2", () -> new NearestNeighborI(2));
+        ImageScaler.Scalers.put("Nearest Neighbor x3", () -> new NearestNeighborI(3));
+        ImageScaler.Scalers.put("Scale2x", Scale2x::new);
+        ImageScaler.Scalers.put("Scale3x", Scale3x::new);
 
         preview = findViewById(R.id.preview);
         colorView = findViewById(R.id.colorPreview);
@@ -69,6 +93,10 @@ public class MainActivity extends AppCompatActivity {
         heightInput = findViewById(R.id.heightInput);
         colorsInput = findViewById(R.id.numColorsInput);
         seedsInput = findViewById(R.id.numSeedsInput);
+
+        scalerSpinner = findViewById(R.id.scaleSpinner);
+        widthScaleInput = findViewById(R.id.widthScale);
+        heightScaleInput = findViewById(R.id.heightScale);
 
         edgeInput = findViewById(R.id.edgeDensityInput);
         centerInput = findViewById(R.id.centerDensityInput);
@@ -115,10 +143,33 @@ public class MainActivity extends AppCompatActivity {
 
         updateColorPreview();
 
+        List<String> scalerKeys = new ArrayList<>(ImageScaler.Scalers.keySet());
+        Log.d("Pixelart", "Key length = " + scalerKeys.size());
+        for (String key : scalerKeys) {
+            Log.d("Pixelart", "Key = " + key);
+        }
+        scalerSpinner.setAdapter(new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item,
+                new ArrayList<>(ImageScaler.Scalers.keySet())));
+        scalerSpinner.setVisibility(View.VISIBLE);
+        scalerSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                specState.scaleName = parent.getItemAtPosition(position).toString();
+                generate();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                scalerSpinner.setSelection(0);
+            }
+        });
+
         probSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                runOnUiThread(() -> probInput.setProgress((int) (1000 * specState.caProbs[position])));
+                runOnUiThread(() ->
+                        probInput.setProgress((int) (1000 * specState.caProbs[position])));
             }
 
             @Override
@@ -221,7 +272,11 @@ public class MainActivity extends AppCompatActivity {
 
         refreshButton.setOnClickListener((button) -> generate());
 
-        saveButton.setOnClickListener((button) -> Utils.saveBitmap(sprite, this, "PixelSprites", "PixelArt_" + System.currentTimeMillis(), true));
+        saveButton.setOnClickListener((button) -> Utils.saveBitmap(sprite,
+                this,
+                "PixelSprites",
+                "PixelArt_" + System.currentTimeMillis(),
+                true));
 
         batchButton.setOnClickListener(button -> promptSaveBatch());
 
@@ -244,11 +299,15 @@ public class MainActivity extends AppCompatActivity {
 
             });
             AlertDialog dialog = builder.create();
-            dialog.setOnShowListener((di) -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.colorPrimaryDark)));
+            dialog.setOnShowListener((di) ->
+                    dialog
+                            .getButton(AlertDialog.BUTTON_POSITIVE)
+                            .setTextColor(getResources().getColor(R.color.colorPrimaryDark)));
             dialog.show();
             return true;
         } else if (item.getItemId() == R.id.source) {
-            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/cppietime/PixelArt"));
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://github.com/cppietime/PixelArt"));
             startActivity(browserIntent);
         }
         return super.onOptionsItemSelected(item);
@@ -262,7 +321,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             File imagesFolder = new File(getCacheDir(), "images");
             if (!imagesFolder.exists()) {
-                if( !imagesFolder.mkdirs() ) {
+                if (!imagesFolder.mkdirs()) {
                     Log.e("Pixelart", "Could not create directory");
                 }
             }
@@ -271,7 +330,9 @@ public class MainActivity extends AppCompatActivity {
             sprite.compress(Bitmap.CompressFormat.PNG, 100, fos);
             fos.flush();
             fos.close();
-            Uri uri = FileProvider.getUriForFile(this, "com.funguscow.fileprovider", cacheFile);
+            Uri uri = FileProvider.getUriForFile(this,
+                    "com.funguscow.fileprovider",
+                    cacheFile);
             Intent shareIntent = new Intent();
             shareIntent.setAction(Intent.ACTION_SEND);
             shareIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -287,7 +348,9 @@ public class MainActivity extends AppCompatActivity {
      * Updates the background color of the base color preview to what is selected
      */
     private void updateColorPreview() {
-        runOnUiThread(() -> colorView.setBackgroundColor(Utils.HSV_to_ARGB(specState.hue, specState.saturation, specState.value)));
+        runOnUiThread(() -> colorView.setBackgroundColor(Utils.HSV_to_ARGB(specState.hue,
+                specState.saturation,
+                specState.value)));
     }
 
     /**
@@ -297,7 +360,9 @@ public class MainActivity extends AppCompatActivity {
         if (sprite != null) {
             sprite.recycle();
         }
-        sprite = Bitmap.createBitmap(specState.width, specState.height, Bitmap.Config.ARGB_8888);
+        sprite = Bitmap.createBitmap(specState.targetWidth,
+                specState.targetHeight,
+                Bitmap.Config.ARGB_8888);
         spriteDrawable = new BitmapDrawable(getResources(), sprite);
         spriteDrawable.getPaint().setFilterBitmap(false);
         preview.setImageDrawable(spriteDrawable);
@@ -305,6 +370,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Get the integer value of an EditText
+     *
      * @param text EditText view to extract from
      * @return int value contained in {@code text}, or 0
      */
@@ -318,6 +384,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Get the progress out of 1 of a SeekBar
+     *
      * @param bar Bar view to poll
      * @return Progress in [0, 1]
      */
@@ -327,6 +394,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Match {@code specs} to the current inputs
+     *
      * @param specs State to update
      */
     private void updateSpecs(Specs specs) {
@@ -349,6 +417,16 @@ public class MainActivity extends AppCompatActivity {
         if (specs.seeds < 1) {
             specs.seeds = 1;
             seedsInput.setText(getString(R.string.integer, 1));
+        }
+        specs.targetWidth = intOf(widthScaleInput);
+        if (specs.targetWidth < MINIMUM_SIZE) {
+            specs.targetWidth = MINIMUM_SIZE;
+            widthScaleInput.setText(getString(R.string.integer, MINIMUM_SIZE));
+        }
+        specs.targetHeight = intOf(heightScaleInput);
+        if (specs.targetHeight < MINIMUM_SIZE) {
+            specs.targetHeight = MINIMUM_SIZE;
+            heightScaleInput.setText(getString(R.string.integer, MINIMUM_SIZE));
         }
 
         specs.randomSeed = randomSeed.isChecked();
@@ -375,6 +453,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Randomly set UI selections and specs state
+     *
      * @param specs state to randomize
      */
     private void randomizeSpecs(Specs specs) {
@@ -432,7 +511,7 @@ public class MainActivity extends AppCompatActivity {
         updateSpecs(specState);
         updateColorPreview();
 
-        if (specState.width != sprite.getWidth() || specState.height != sprite.getHeight()) {
+        if (specState.targetWidth != sprite.getWidth() || specState.targetHeight != sprite.getHeight()) {
             recreateBitmap();
         }
     }
@@ -449,10 +528,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Prompt the user for a number of images to save in a batch. If confirmed and non-zero, save them
+     * Prompt the user for a number of images to save in a batch.
+     * If confirmed and non-zero, save them
      */
     private void promptSaveBatch() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.Dialog));
+        AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this,
+                R.style.Dialog));
         final EditText numberInput = new EditText(this);
         numberInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         numberInput.setHint(R.string.batch_hint);
@@ -470,7 +551,9 @@ public class MainActivity extends AppCompatActivity {
                 saveBatch(size);
             } catch (Exception e) {
                 runOnUiThread(() ->
-                Toast.makeText(MainActivity.this, "Enter an integer", Toast.LENGTH_LONG).show());
+                        Toast.makeText(MainActivity.this,
+                                "Enter an integer",
+                                Toast.LENGTH_LONG).show());
             }
         });
         builder.show();
@@ -478,6 +561,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Save a sequence of images
+     *
      * @param size Number of images in sequence
      */
     private void saveBatch(int size) {
@@ -488,12 +572,18 @@ public class MainActivity extends AppCompatActivity {
         int successful = 0;
         for (int i = 0; i < size; i++) {
             grid.drawTo(sprite);
-            if (Utils.saveBitmap(sprite, this, "PixelSprites", base + i, false)) {
+            if (Utils.saveBitmap(sprite,
+                    this,
+                    "PixelSprites",
+                    base + i,
+                    false)) {
                 successful++;
             }
         }
         final int worked = successful;
         runOnUiThread(() ->
-                Toast.makeText(this, "Saved " + worked + " out of " + size + " images!", Toast.LENGTH_LONG).show());
+                Toast.makeText(this,
+                        "Saved " + worked + " out of " + size + " images!",
+                        Toast.LENGTH_LONG).show());
     }
 }
