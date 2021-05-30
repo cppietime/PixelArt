@@ -19,10 +19,21 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * Common functions, mostly math/IO
+ */
 public class Utils {
 
-    public static final float LOG2 = (float) Math.log(0.5);
+    public static final float LOG_0_5 = (float) Math.log(0.5);
 
+    /**
+     * Convert hue, saturation, value, and alpha to ARGB
+     * @param h Hue in [0, 1]
+     * @param s Saturation in [0, 1]
+     * @param v Value in [0, 1]
+     * @param a Alpha in [0, 1]
+     * @return Color as 0xAARRGGBB
+     */
     public static int HSVA_to_ARGB(float h, float s, float v, float a) {
         h = (((h % 1) + 1) % 1) * 6; // Adjust possible negatives
         int sextant = (int) h;
@@ -70,14 +81,33 @@ public class Utils {
         return (alpha << 24) | (r << 16) | (g << 8) | b;
     }
 
+    /**
+     * Convert hue, saturation, and value to ARGB
+     * @param h Hue in [0, 1]
+     * @param s Saturation in [0, 1]
+     * @param v Value in [0, 1]
+     * @return Color as 0xFFRRGGBB (alpha = 255)
+     */
     public static int HSV_to_ARGB(float h, float s, float v) {
         return HSVA_to_ARGB(h, s, v, 1f);
     }
 
+    /**
+     * Perlin bias function
+     * @param t Independent variable
+     * @param bias Bias parameter
+     * @return {@code t} ^ ( log({@code bias}) / log(0.5) )
+     */
     public static float bias(float t, float bias) {
-        return (float) Math.pow(t, Math.log(bias) / LOG2);
+        return (float) Math.pow(t, Math.log(bias) / LOG_0_5);
     }
 
+    /**
+     * Perlin gain function
+     * @param t Independent variable
+     * @param gain Gain parameter
+     * @return Scaled/mirrored bias function
+     */
     public static float gain(float t, float gain) {
         if (t <= 0.5f) {
             return 0.5f * bias(t * 2, 1f - gain);
@@ -85,14 +115,35 @@ public class Utils {
         return 1f - 0.5f * bias(2f - t * 2, 1f - gain);
     }
 
+    /**
+     * Linear interpolation
+     * @param a Left-value
+     * @param b Right-value
+     * @param z Interpolation amount
+     * @return {@code a} + ({@code b} - {@code a}) * {@code z}
+     */
     public static float lerp(float a, float b, float z) {
         return a + (b - a) * z;
     }
 
+    /**
+     * Clamp {@code x} between {@code min} and {@code max}
+     * @param x Value to clamp
+     * @param min Minimum value
+     * @param max Maximum value
+     * @return {@code min} if {@code x} \< {@code min}. {@code max} if {@code x} \> {@code max}.
+     *      otherwise {@code x}
+     */
     public static float clamp(float x, float min, float max) {
         return Math.min(Math.max(x, min), max);
     }
 
+    /**
+     * Util function to generate content values for saving
+     * @param mime MIME type
+     * @param name Name of object
+     * @return ContentValues for saving
+     */
     private static ContentValues freshValuesForMIME(String mime, String name) {
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.MIME_TYPE, mime);
@@ -104,6 +155,15 @@ public class Utils {
         return values;
     }
 
+    /**
+     * Save a Bitmap to the device's gallery
+     * @param img Bitmap to save
+     * @param context Context of application
+     * @param folder Name of parent folder
+     * @param name Name of image to save
+     * @param toast Whether or not to display a toast
+     * @return {@code true} iff the image was saved
+     */
     public static boolean saveBitmap(Bitmap img, Activity context, String folder, String name, boolean toast) {
         boolean success = false;
         if (Build.VERSION.SDK_INT >= 29) {

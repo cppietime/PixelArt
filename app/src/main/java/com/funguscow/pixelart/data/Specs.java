@@ -1,5 +1,8 @@
 package com.funguscow.pixelart.data;
 
+/**
+ * Necessary parameters for image generation
+ */
 public class Specs {
 
     public int width = 16, height = 16;

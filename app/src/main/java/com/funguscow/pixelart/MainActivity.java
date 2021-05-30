@@ -33,6 +33,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Random;
 
+/**
+ * Main activity for image generation
+ */
 public class MainActivity extends AppCompatActivity {
 
     private static final int MINIMUM_SIZE = 4;
@@ -224,6 +227,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.info_menu, menu);
@@ -250,7 +254,10 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    @SuppressWarnings("unused")
+    /**
+     * Share the currently displayed image as the user chooses.
+     * Saves a file to the cache dir for sharing
+     */
     private void share() {
         try {
             File imagesFolder = new File(getCacheDir(), "images");
@@ -276,10 +283,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Updates the background color of the base color preview to what is selected
+     */
     private void updateColorPreview() {
         runOnUiThread(() -> colorView.setBackgroundColor(Utils.HSV_to_ARGB(specState.hue, specState.saturation, specState.value)));
     }
 
+    /**
+     * (re)creates the bitmap and bitmap-drawable for the currently selected size
+     */
     private void recreateBitmap() {
         if (sprite != null) {
             sprite.recycle();
@@ -290,6 +303,11 @@ public class MainActivity extends AppCompatActivity {
         preview.setImageDrawable(spriteDrawable);
     }
 
+    /**
+     * Get the integer value of an EditText
+     * @param text EditText view to extract from
+     * @return int value contained in {@code text}, or 0
+     */
     private int intOf(EditText text) {
         try {
             return Integer.parseInt(text.getText().toString());
@@ -298,10 +316,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Get the progress out of 1 of a SeekBar
+     * @param bar Bar view to poll
+     * @return Progress in [0, 1]
+     */
     private float valOf(SeekBar bar) {
         return (float) bar.getProgress() / bar.getMax();
     }
 
+    /**
+     * Match {@code specs} to the current inputs
+     * @param specs State to update
+     */
     private void updateSpecs(Specs specs) {
         specs.width = intOf(widthInput);
         if (specs.width < MINIMUM_SIZE) {
@@ -346,6 +373,10 @@ public class MainActivity extends AppCompatActivity {
         specs.caProbs[probSpinner.getSelectedItemPosition()] = valOf(probInput);
     }
 
+    /**
+     * Randomly set UI selections and specs state
+     * @param specs state to randomize
+     */
     private void randomizeSpecs(Specs specs) {
         // Doing this outside of the UI thread because we can
         for (int i = 0; i < specs.caProbs.length; i++) {
@@ -381,6 +412,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Common operations to perform before generation, like randomization and resizing
+     */
     private void preGenerate() {
         if (specState.randomSeed) {
             long seed = random.nextLong();
@@ -403,6 +437,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Generate an image to match the specs
+     */
     private void generate() {
         preGenerate();
 
@@ -411,6 +448,9 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Prompt the user for a number of images to save in a batch. If confirmed and non-zero, save them
+     */
     private void promptSaveBatch() {
         AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.Dialog));
         final EditText numberInput = new EditText(this);
@@ -436,6 +476,10 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
+    /**
+     * Save a sequence of images
+     * @param size Number of images in sequence
+     */
     private void saveBatch(int size) {
         preGenerate();
 

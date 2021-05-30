@@ -9,7 +9,12 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Random;
 
+/**
+ * A grid that acts as the intermediate for sprite generation
+ */
 public class SpriteGrid {
+
+    private static final float H_SIGMA = 0.2f, S_SIGMA = 0.2f, V_SIGMA = 0.2f;
 
     private int[] grid;
     private int width, height;
@@ -19,6 +24,10 @@ public class SpriteGrid {
 
     private boolean mirrorX, mirrorY, mirrorP, mirrorN;
 
+    /**
+     *
+     * @param specs Input parameters to use in generating a sprite
+     */
     public SpriteGrid(Specs specs) {
         this.specs = specs;
         width = this.specs.width;
@@ -27,6 +36,11 @@ public class SpriteGrid {
         random = new Random(specs.seed);
     }
 
+    /**
+     * Generate the image and write them to {@code img}
+     * @param img Bitmap that acts as a destination
+     * @throws IllegalArgumentException When {@code img}'s dimensions do not match this'
+     */
     public void drawTo(Bitmap img) {
         mirrorX = random.nextFloat() < specs.xMirror;
         mirrorY = random.nextFloat() < specs.yMirror;
@@ -48,14 +62,17 @@ public class SpriteGrid {
         }
     }
 
+    /**
+     * Create/populate the image palette with colors
+     */
     private void populatePalette() {
         palette = new int[specs.colors];
         palette[0] = Utils.HSV_to_ARGB(specs.hue, specs.saturation, specs.value);
         for (int i = 1; i < palette.length; i++) {
-            float h = (float) random.nextGaussian() * 0.1f + specs.hue;
-            float s = (float) random.nextGaussian() * 0.1f + specs.saturation;
+            float h = (float) random.nextGaussian() * H_SIGMA + specs.hue;
+            float s = (float) random.nextGaussian() * S_SIGMA + specs.saturation;
             s = Utils.clamp(s, 0, 1);
-            float v = (float) random.nextGaussian() * 0.1f + specs.value;
+            float v = (float) random.nextGaussian() * V_SIGMA + specs.value;
             v = Utils.clamp(v, 0, 1);
             // No need to clamp h as it wraps around anyway
             palette[i] = Utils.HSV_to_ARGB(h, s, v);
@@ -63,6 +80,9 @@ public class SpriteGrid {
         }
     }
 
+    /**
+     * Randomly mark cells as empty/filled
+     */
     private void fillCells() {
         for (int y = 0; y < height; y++) {
             float yDist = 1 - Math.abs((height - y * 2f) / height);
@@ -82,6 +102,9 @@ public class SpriteGrid {
         }
     }
 
+    /**
+     * Despeckle, despur, relax, and devoid
+     */
     private void simulateCA() {
         int[] temp = new int[width * height];
         int generations = 1; // TODO allow specifying
@@ -111,6 +134,9 @@ public class SpriteGrid {
         }
     }
 
+    /**
+     * Plant random color seeds and propagate with mutation
+     */
     private void colorize() {
         Deque<Integer> frontier = new ArrayDeque<>();
         for (int i = 0; i < specs.seeds; i++) {
@@ -176,6 +202,9 @@ public class SpriteGrid {
         }
     }
 
+    /**
+     * Mirror on axes and diagonals
+     */
     private void mirror() {
         if (mirrorX) {
             for (int y = 0; y < height; y++) {
