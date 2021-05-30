@@ -12,3 +12,6 @@
 /captures
 .externalNativeBuild
 .cxx
+/private_key.pepk
+/store/
+/app/release/

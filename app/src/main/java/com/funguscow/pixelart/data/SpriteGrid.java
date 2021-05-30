@@ -7,7 +7,6 @@ import com.funguscow.pixelart.Utils;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Queue;
 import java.util.Random;
 
 public class SpriteGrid {
@@ -25,7 +24,6 @@ public class SpriteGrid {
         width = this.specs.width;
         height = this.specs.height;
         grid = new int[height * width];
-        palette = new int[specs.colors];
         random = new Random(specs.seed);
     }
 
@@ -51,6 +49,7 @@ public class SpriteGrid {
     }
 
     private void populatePalette() {
+        palette = new int[specs.colors];
         palette[0] = Utils.HSV_to_ARGB(specs.hue, specs.saturation, specs.value);
         for (int i = 1; i < palette.length; i++) {
             float h = (float) random.nextGaussian() * 0.1f + specs.hue;
@@ -114,7 +113,7 @@ public class SpriteGrid {
 
     private void colorize() {
         Deque<Integer> frontier = new ArrayDeque<>();
-        for (int i = 0; i < specs.colors; i++) {
+        for (int i = 0; i < specs.seeds; i++) {
             int index = random.nextInt(width * height);
             int color = palette[random.nextInt(palette.length)];
             int old = grid[index];

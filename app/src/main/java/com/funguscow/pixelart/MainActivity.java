@@ -1,45 +1,41 @@
 package com.funguscow.pixelart;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.FileProvider;
-
-import android.Manifest;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.text.InputType;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
+
 import com.funguscow.pixelart.data.Specs;
 import com.funguscow.pixelart.data.SpriteGrid;
-import com.funguscow.pixelart.interfaces.SeekBarProgressListener;
 import com.funguscow.pixelart.interfaces.SeekBarStopListener;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final int MINIMUM_SIZE = 4;
 
     private ImageView preview, colorView;
     private Bitmap sprite;
@@ -55,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Specs specState = new Specs();
 
-    private Button randomAllButton, refreshButton, saveButton, shareButton, randomSeedButton;
+    private Button randomAllButton, refreshButton, saveButton, shareButton, randomSeedButton, batchButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,13 +93,14 @@ public class MainActivity extends AppCompatActivity {
         saveButton = findViewById(R.id.saveButton);
         shareButton = findViewById(R.id.shareButton);
         refreshButton = findViewById(R.id.refreshButton);
+        batchButton = findViewById(R.id.batchButton);
 
         sprite = Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888);
 
         random = new Random();
         long seed = random.nextLong();
         specState.seed = seed;
-        seedInput.setText(seed + "");
+        seedInput.setText(getString(R.string.integer, seed));
         updateSpecs(specState);
         SpriteGrid grid = new SpriteGrid(specState);
         grid.drawTo(sprite);
@@ -118,9 +115,7 @@ public class MainActivity extends AppCompatActivity {
         probSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                runOnUiThread(() -> {
-                    probInput.setProgress((int) (1000 * specState.caProbs[position]));
-                });
+                runOnUiThread(() -> probInput.setProgress((int) (1000 * specState.caProbs[position])));
             }
 
             @Override
@@ -134,26 +129,66 @@ public class MainActivity extends AppCompatActivity {
             generate();
         });
 
-        hueInput.setOnSeekBarChangeListener((SeekBarProgressListener) (bar, progress, user) -> {
-            specState.hue = (float) progress / bar.getMax();
-            updateColorPreview();
+        hueInput.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar bar, int progress, boolean user) {
+                specState.hue = (float) progress / bar.getMax();
+                MainActivity.this.updateColorPreview();
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                runOnUiThread(() -> randomColor.setChecked(false));
+                specState.randomColor = false;
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                generate();
+            }
         });
-        saturationInput.setOnSeekBarChangeListener((SeekBarProgressListener) (bar, progress, user) -> {
-            specState.saturation = (float) progress / bar.getMax();
-            updateColorPreview();
+        saturationInput.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar bar, int progress, boolean user) {
+                specState.saturation = (float) progress / bar.getMax();
+                MainActivity.this.updateColorPreview();
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                runOnUiThread(() -> randomColor.setChecked(false));
+                specState.randomColor = false;
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                generate();
+            }
         });
-        valueInput.setOnSeekBarChangeListener((SeekBarProgressListener) (bar, progress, user) -> {
-            specState.value = (float) progress / bar.getMax();
-            updateColorPreview();
+        valueInput.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar bar, int progress, boolean user) {
+                specState.value = (float) progress / bar.getMax();
+                MainActivity.this.updateColorPreview();
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                runOnUiThread(() -> randomColor.setChecked(false));
+                specState.randomColor = false;
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                generate();
+            }
         });
 
         randomSeed.setOnCheckedChangeListener((view, checked) -> {
             specState.randomSeed = checked;
             runOnUiThread(() -> seedInput.setEnabled(!checked));
         });
-        randomColor.setOnCheckedChangeListener((view, checked) -> {
-            specState.randomColor = checked;
-        });
+        randomColor.setOnCheckedChangeListener((view, checked) -> specState.randomColor = checked);
 
         SeekBarStopListener generalListener = (bar) -> generate();
         edgeInput.setOnSeekBarChangeListener(generalListener);
@@ -169,9 +204,7 @@ public class MainActivity extends AppCompatActivity {
 
         randomSeedButton.setOnClickListener((button) -> {
             if (!specState.randomSeed) {
-                runOnUiThread(() -> {
-                    seedInput.setText(random.nextLong() + "");
-                });
+                runOnUiThread(() -> seedInput.setText(getString(R.string.integer, random.nextLong())));
             }
             generate();
         });
@@ -181,19 +214,14 @@ public class MainActivity extends AppCompatActivity {
             generate();
         });
 
-        shareButton.setOnClickListener((button) -> {
-            share();
-        });
+        shareButton.setOnClickListener((button) -> share());
 
-        refreshButton.setOnClickListener((button) -> {
-            generate();
-        });
+        refreshButton.setOnClickListener((button) -> generate());
 
-        saveButton.setOnClickListener((button) -> {
-            Utils.saveBitmap(sprite, this, "com.funguscow.pixelart");
-        });
+        saveButton.setOnClickListener((button) -> Utils.saveBitmap(sprite, this, "PixelSprites", "PixelArt_" + System.currentTimeMillis(), true));
 
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+        batchButton.setOnClickListener(button -> promptSaveBatch());
+
     }
 
     @Override
@@ -212,23 +240,25 @@ public class MainActivity extends AppCompatActivity {
 
             });
             AlertDialog dialog = builder.create();
-            dialog.setOnShowListener((di) -> {
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.colorPrimaryDark));
-            });
+            dialog.setOnShowListener((di) -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.colorPrimaryDark)));
             dialog.show();
             return true;
-        }
-        else if(item.getItemId() == R.id.source) {
+        } else if (item.getItemId() == R.id.source) {
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/cppietime/PixelArt"));
             startActivity(browserIntent);
         }
         return super.onOptionsItemSelected(item);
     }
 
+    @SuppressWarnings("unused")
     private void share() {
         try {
             File imagesFolder = new File(getCacheDir(), "images");
-            imagesFolder.mkdirs();
+            if (!imagesFolder.exists()) {
+                if( !imagesFolder.mkdirs() ) {
+                    Log.e("Pixelart", "Could not create directory");
+                }
+            }
             File cacheFile = new File(imagesFolder, "shared_image.png");
             FileOutputStream fos = new FileOutputStream(cacheFile);
             sprite.compress(Bitmap.CompressFormat.PNG, 100, fos);
@@ -264,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             return Integer.parseInt(text.getText().toString());
         } catch (NumberFormatException e) {
-            return 1;
+            return 0;
         }
     }
 
@@ -274,9 +304,25 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateSpecs(Specs specs) {
         specs.width = intOf(widthInput);
+        if (specs.width < MINIMUM_SIZE) {
+            specs.width = MINIMUM_SIZE;
+            widthInput.setText(getString(R.string.integer, MINIMUM_SIZE));
+        }
         specs.height = intOf(heightInput);
+        if (specs.height < MINIMUM_SIZE) {
+            specs.height = MINIMUM_SIZE;
+            heightInput.setText(getString(R.string.integer, MINIMUM_SIZE));
+        }
         specs.colors = intOf(colorsInput);
+        if (specs.colors < 1) {
+            specs.colors = 1;
+            colorsInput.setText(getString(R.string.integer, 1));
+        }
         specs.seeds = intOf(seedsInput);
+        if (specs.seeds < 1) {
+            specs.seeds = 1;
+            seedsInput.setText(getString(R.string.integer, 1));
+        }
 
         specs.randomSeed = randomSeed.isChecked();
         specs.seed = Long.parseLong(seedInput.getText().toString());
@@ -308,10 +354,10 @@ public class MainActivity extends AppCompatActivity {
 
         runOnUiThread(() -> {
 
-            colorsInput.setText(1 + random.nextInt(10) + "");
-            seedsInput.setText(2 + random.nextInt(10) + "");
+            colorsInput.setText(getString(R.string.integer, 1 + random.nextInt(10)));
+            seedsInput.setText(getString(R.string.integer, 2 + random.nextInt(10)));
 
-            seedInput.setText(random.nextLong() + "");
+            seedInput.setText(getString(R.string.integer, random.nextLong()));
 
             int edge = random.nextInt(500);
             edgeInput.setProgress(edge);
@@ -335,10 +381,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void generate() {
+    private void preGenerate() {
         if (specState.randomSeed) {
             long seed = random.nextLong();
-            runOnUiThread(() -> seedInput.setText(seed + ""));
+            runOnUiThread(() -> seedInput.setText(getString(R.string.integer, seed)));
         }
 
         if (specState.randomColor) {
@@ -355,9 +401,55 @@ public class MainActivity extends AppCompatActivity {
         if (specState.width != sprite.getWidth() || specState.height != sprite.getHeight()) {
             recreateBitmap();
         }
+    }
+
+    private void generate() {
+        preGenerate();
 
         SpriteGrid grid = new SpriteGrid(specState);
         grid.drawTo(sprite);
 
+    }
+
+    private void promptSaveBatch() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.Dialog));
+        final EditText numberInput = new EditText(this);
+        numberInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        numberInput.setHint(R.string.batch_hint);
+        numberInput.setText("1");
+        builder.setView(numberInput);
+        builder.setTitle(R.string.batch_title);
+        builder.setNegativeButton("Cancel", (dialog, which) -> {
+
+        });
+        builder.setPositiveButton("Save", (dialog, which) -> {
+            int size;
+            try {
+                size = Integer.parseInt(numberInput.getText().toString());
+                size = Math.max(size, 1);
+                saveBatch(size);
+            } catch (Exception e) {
+                runOnUiThread(() ->
+                Toast.makeText(MainActivity.this, "Enter an integer", Toast.LENGTH_LONG).show());
+            }
+        });
+        builder.show();
+    }
+
+    private void saveBatch(int size) {
+        preGenerate();
+
+        SpriteGrid grid = new SpriteGrid(specState);
+        String base = "PixelArtBatch_" + System.currentTimeMillis() + "_";
+        int successful = 0;
+        for (int i = 0; i < size; i++) {
+            grid.drawTo(sprite);
+            if (Utils.saveBitmap(sprite, this, "PixelSprites", base + i, false)) {
+                successful++;
+            }
+        }
+        final int worked = successful;
+        runOnUiThread(() ->
+                Toast.makeText(this, "Saved " + worked + " out of " + size + " images!", Toast.LENGTH_LONG).show());
     }
 }

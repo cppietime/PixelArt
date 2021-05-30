@@ -1,10 +1,15 @@
 <resources>
+    <string name="integer">%d</string>
     <string name="app_name">Pixel Sprite Maker</string>
 
     <string name="save">Save</string>
     <string name="share">Share</string>
     <string name="random_all">Randomize All</string>
     <string name="refresh">Generate</string>
+    <string name="batch">Save Batch</string>
+
+    <string name="batch_title">Batch size</string>
+    <string name="batch_hint">Number of images to save</string>
 
     <string name="width_hint">Width (px)</string>
     <string name="height_hint">Height (px)</string>
@@ -57,6 +62,7 @@ You can use "Base color" to control a base or thematic color for the palette, or
 "Randomize All" will randomly select nearly all parameters and generate a new image.\n
 "Generate" will only update the seed and color if they are set to random, and will create the image for the given parameters.\n
 Hit the Generate button to create an image that matches your specified parameters.\n
+Saving a batch generates a series of images and saves them all to your gallery.\n
 Feel free to goto the source code from the menu to see the internal workings for yourself!
     </string>
 

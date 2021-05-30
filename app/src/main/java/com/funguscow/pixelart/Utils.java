@@ -1,20 +1,23 @@
 package com.funguscow.pixelart;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.ContentValues;
-import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.widget.Toast;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.time.Instant;
 
 public class Utils {
 
@@ -90,21 +93,22 @@ public class Utils {
         return Math.min(Math.max(x, min), max);
     }
 
-    private static ContentValues freshValuesForMIME(String mime) {
+    private static ContentValues freshValuesForMIME(String mime, String name) {
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.MIME_TYPE, mime);
         values.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000);
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, name);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
         }
         return values;
     }
 
-    public static void saveBitmap(Bitmap img, Context context, String folder) {
+    public static boolean saveBitmap(Bitmap img, Activity context, String folder, String name, boolean toast) {
         boolean success = false;
         if (Build.VERSION.SDK_INT >= 29) {
-            ContentValues values = freshValuesForMIME("image/png");
-            values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/");
+            ContentValues values = freshValuesForMIME("image/png", name);
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/" + folder);
             values.put(MediaStore.Images.Media.IS_PENDING, true);
 
             Uri uri = context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
@@ -124,29 +128,42 @@ public class Utils {
                 }
             }
         } else {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            }
             File directory = new File(Environment.getExternalStorageDirectory(), folder);
-            Log.d("Pixelart", "Pre exists? " + directory.exists() + "");
-            directory.mkdirs();
-            Log.d("Pixelart", "Post exists? " + directory.exists() + "");
-            String fileName = System.currentTimeMillis() + ".png";
-            File imgFile = new File(directory, fileName);
-            try {
-                FileOutputStream fos = new FileOutputStream(imgFile);
-                img.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                fos.close();
-                ContentValues values = freshValuesForMIME("image/png");
-                values.put(MediaStore.Images.Media.DATA, imgFile.getAbsolutePath());
-                context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-                success = true;
-            } catch (IOException e) {
-                e.printStackTrace();
+            boolean dirExist = true;
+            if (!directory.exists()) {
+                if (!directory.mkdirs()) {
+                    dirExist = false;
+                }
+            }
+            if (dirExist) {
+                String fileName = name + ".png";
+                File imgFile = new File(directory, fileName);
+                try {
+                    FileOutputStream fos = new FileOutputStream(imgFile);
+                    img.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                    fos.close();
+                    ContentValues values = freshValuesForMIME("image/png", name);
+                    values.put(MediaStore.Images.Media.DATA, imgFile.getAbsolutePath());
+                    context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                    success = true;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
-        if (!success) {
-            Toast.makeText(context, ":c Failed to save image", Toast.LENGTH_LONG).show();
-        } else {
-            Toast.makeText(context, "Saved image!", Toast.LENGTH_LONG).show();
+        if (toast) {
+            if (!success) {
+                context.runOnUiThread(() ->
+                        Toast.makeText(context, ":c Failed to save image", Toast.LENGTH_LONG).show());
+            } else {
+                context.runOnUiThread(() ->
+                        Toast.makeText(context, "Saved image!", Toast.LENGTH_LONG).show());
+            }
         }
+        return success;
     }
 
 }
