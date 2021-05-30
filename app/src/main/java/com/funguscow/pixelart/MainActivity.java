@@ -26,16 +26,11 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
+import com.funguscow.pixelart.interfaces.SeekBarStopListener;
 import com.funguscow.splat.Utils;
 import com.funguscow.splat.data.Specs;
 import com.funguscow.splat.data.SpriteGrid;
-import com.funguscow.pixelart.interfaces.SeekBarStopListener;
-import com.funguscow.splat.scale.Eagle2x;
-import com.funguscow.splat.scale.Eagle3x;
 import com.funguscow.splat.scale.ImageScaler;
-import com.funguscow.splat.scale.NearestNeighborI;
-import com.funguscow.splat.scale.Scale2x;
-import com.funguscow.splat.scale.Scale3x;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -453,43 +448,51 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * RUN ME ON UI THREAD!!
+     *
+     * @param specs SpecState to match
+     */
+    private void matchSpecs(Specs specs) {
+        seedInput.setText(getString(R.string.integer, specs.seed));
+        randomSeed.setChecked(specs.randomSeed);
+        widthInput.setText(getString(R.string.integer, specs.width));
+        heightInput.setText(getString(R.string.integer, specs.height));
+        colorsInput.setText(getString(R.string.integer, specs.colors));
+        seedsInput.setText(getString(R.string.integer, specs.seeds));
+        widthScaleInput.setText(getString(R.string.integer, specs.targetWidth));
+        heightScaleInput.setText(getString(R.string.integer, specs.targetHeight));
+        edgeInput.setProgress((int) (specs.minProb * 1000));
+        centerInput.setProgress((int) (specs.maxProb * 1000));
+        biasInput.setProgress((int) (specs.bias * 1000));
+        gainInput.setProgress((int) (specs.gain * 1000));
+        xInput.setProgress((int) (specs.xMirror * 1000));
+        yInput.setProgress((int) (specs.yMirror * 1000));
+        pInput.setProgress((int) (specs.pMirror * 1000));
+        nInput.setProgress((int) (specs.nMirror * 1000));
+        speedInput.setProgress((int) (specs.variance * 1000));
+        mutationInput.setProgress((int) (specs.mutation * 1000));
+        hueInput.setProgress((int) (specs.hue * 256));
+        saturationInput.setProgress((int) (specs.saturation * 256));
+        valueInput.setProgress((int) (specs.value * 256));
+        randomColor.setChecked(specs.randomColor);
+        probInput.setProgress((int) (specs.caProbs[probSpinner.getSelectedItemPosition()] * 1000));
+        for (int i = 0; i < scalerSpinner.getCount(); i++) {
+            if (scalerSpinner.getItemAtPosition(i).toString().equals(specs.scaleName)) {
+                scalerSpinner.setSelection(i);
+                break;
+            }
+        }
+        updateColorPreview();
+    }
+
+    /**
      * Randomly set UI selections and specs state
      *
      * @param specs state to randomize
      */
     private void randomizeSpecs(Specs specs) {
-        // Doing this outside of the UI thread because we can
-        for (int i = 0; i < specs.caProbs.length; i++) {
-            specs.caProbs[i] = random.nextFloat();
-        }
-
-        runOnUiThread(() -> {
-
-            colorsInput.setText(getString(R.string.integer, 1 + random.nextInt(10)));
-            seedsInput.setText(getString(R.string.integer, 2 + random.nextInt(10)));
-
-            seedInput.setText(getString(R.string.integer, random.nextLong()));
-
-            int edge = random.nextInt(500);
-            edgeInput.setProgress(edge);
-            centerInput.setProgress(edge + random.nextInt(1000 - edge));
-            biasInput.setProgress(random.nextInt(1000));
-            gainInput.setProgress(random.nextInt(1000));
-            xInput.setProgress(random.nextInt(1000));
-            yInput.setProgress(random.nextInt(1000));
-            pInput.setProgress(random.nextInt(1000));
-            nInput.setProgress(random.nextInt(1000));
-            speedInput.setProgress(random.nextInt(1000));
-            mutationInput.setProgress(random.nextInt(1000));
-
-            hueInput.setProgress(random.nextInt(256));
-            saturationInput.setProgress(random.nextInt(256));
-            valueInput.setProgress(random.nextInt(256));
-
-            probInput.setProgress(random.nextInt(1000));
-
-            updateSpecs(specs);
-        });
+        specs.randomize(random);
+        matchSpecs(specs);
     }
 
     /**

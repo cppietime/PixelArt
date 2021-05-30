@@ -129,8 +129,9 @@ public class IOHelper {
 
     /**
      * Draw pixels to a new bitmap
+     *
      * @param pixels Source of pixels
-     * @param img Filled bitmap
+     * @param img    Filled bitmap
      */
     public static void pixelsToBitmap(int[] pixels, Bitmap img) {
         int width = img.getWidth();
